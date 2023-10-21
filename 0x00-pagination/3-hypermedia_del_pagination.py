@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 Deletion-resilient hypermedia pagination
 """
@@ -40,31 +39,28 @@ class Server:
             }
         return self.__indexed_dataset
 
-    def get_hyper_index(self, index: int = None,
-                        page_size: int = 10) -> Dict:
-        """ return all data"""
+    def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
+        """return a dictionary with the following key-value pairs:
+        index, next_index, page_size, data"""
+        all_data = self.indexed_dataset()
+        try:
+            assert index >= 0 and index <= max(all_data.keys())
+        except Exception:
+            raise
 
-        if index is None:
-            index = 0
-
-        # validate the index
-        assert isinstance(index, int)
-        assert 0 <= index < len(self.indexed_dataset())
-        assert isinstance(page_size, int) and page_size > 0
-
-        data = []  # collect all indexed data
-        next_index = index + page_size
-
-        for value in range(index, next_index):
-            if self.indexed_dataset().get(value):
-                data.append(self.indexed_dataset()[value])
-            else:
-                value += 1
-                next_index += 1
-
+        data = []
+        count = 0
+        for key, item in all_data.items():
+            if key >= index and count < page_size:
+                data.append(item)
+                count += 1
+                continue
+            if count == page_size:
+                next_index = key
+                break
         return {
             'index': index,
-            'data': data,
-            'page_size': page_size,
-            'next_index': next_index
+            'next_index': next_index,
+            'page_size': len(data),
+            'data': data
         }
